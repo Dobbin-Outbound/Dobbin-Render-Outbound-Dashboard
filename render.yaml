@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: outreach-dashboard
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app -c gunicorn.conf.py
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: HEYREACH_API_KEY
+        sync: false
+      - key: HEYREACH_BASE_URL
+        value: https://api.heyreach.io
+      - key: HEYREACH_SENDER_IDS
+        sync: false  # JSON array: [120478, 186717]
+      - key: HEYREACH_SENDER_NAMES
+        sync: false  # JSON: {"120478": "Jill Ph.D.", "186717": "Matthew D. Lee"}
+      - key: DASHBOARD_USERNAME
+        sync: false
+      - key: DASHBOARD_PASSWORD
+        sync: false
+      - key: INSTANTLY_API_KEY
+        sync: false  # Optional - for future email outreach

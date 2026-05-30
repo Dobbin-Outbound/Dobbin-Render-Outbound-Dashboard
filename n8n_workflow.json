@@ -1,0 +1,138 @@
+{
+  "name": "HeyReach Reply -> Supabase (V1.1, no community nodes)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "heyreach-webhook",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "webhook-node",
+      "name": "Webhook",
+      "webhookId": "heyreach-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Build the JSON payload for the Supabase RPC call.\n// HeyReach's webhook payload (under $json.body) already contains everything we need:\n//   conversation_id, correlation_id, event_type, timestamp,\n//   sender (LinkedIn account), lead (prospect), campaign, recent_messages.\n// So we don't need to call HeyReach API again here.\n\nconst body = $json.body || $json;\n\n// Defensive: HeyReach occasionally nests payload under data.\nconst payload = body.data || body;\n\nreturn {\n  json: {\n    p_conversation_id: String(payload.conversation_id || payload.conversationId || ''),\n    p_campaign: payload.campaign || {},\n    p_sender: payload.sender || payload.linkedInAccount || {},\n    p_lead: payload.lead || payload.prospect || {},\n    p_correlation_id: String(payload.correlation_id || payload.correlationId || ''),\n    p_event_type: String(payload.event_type || payload.eventType || ''),\n    p_timestamp: payload.timestamp || new Date().toISOString(),\n    p_is_inmail: Boolean(payload.is_inmail || payload.isInmail || false),\n    p_recent_messages: payload.recent_messages || payload.recentMessages || payload.messages || []\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        300,
+        0
+      ],
+      "id": "build-payload-node",
+      "name": "Build Supabase Payload"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://jezvwasrtgjrunagabpj.supabase.co/rest/v1/rpc/upsert_heyreach_conversation",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "PASTE_SUPABASE_SERVICE_ROLE_KEY_HERE"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer PASTE_SUPABASE_SERVICE_ROLE_KEY_HERE"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text",
+              "neverError": true,
+              "fullResponse": false
+            }
+          },
+          "timeout": 15000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        600,
+        0
+      ],
+      "id": "upsert-supabase-node",
+      "name": "Upsert to Supabase"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: true, conversation_id: $('Build Supabase Payload').item.json.p_conversation_id } }}"
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        900,
+        0
+      ],
+      "id": "respond-node",
+      "name": "Respond OK"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Build Supabase Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Supabase Payload": {
+      "main": [
+        [
+          {
+            "node": "Upsert to Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert to Supabase": {
+      "main": [
+        [
+          {
+            "node": "Respond OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": []
+}

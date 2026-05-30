@@ -1,0 +1,112 @@
+{
+  "name": "HeyReach Tag Sync -> Supabase (poller)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            { "field": "minutes", "minutesInterval": 15 }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0],
+      "id": "sched-node",
+      "name": "Every 15 min"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.heyreach.io/api/public/inbox/GetConversationsV2",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "X-API-KEY", "value": "PASTE_HEYREACH_API_KEY_HERE" },
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Accept", "value": "text/plain" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"offset\": {{ ($pageCount || 0) * 100 }}, \"limit\": 100 }",
+        "options": {
+          "timeout": 30000,
+          "pagination": {
+            "pagination": {
+              "paginationMode": "updateAParameterInEachRequest",
+              "parameters": {
+                "parameters": [
+                  { "type": "body", "name": "offset", "value": "={{ $pageCount * 100 }}" }
+                ]
+              },
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ ($response.body.items || []).length < 100 }}",
+              "limitPagesFetched": true,
+              "maxRequestsFetched": 15,
+              "requestInterval": 250
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [260, 0],
+      "id": "heyreach-node",
+      "name": "HeyReach GetConversationsV2 (paged)"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Collect conversations across ALL pages (n8n returns one item per page),\n// keep only those that carry tags, and normalize every tag to a plain\n// string (HeyReach returns a mix of strings and {name,...} objects).\n\nconst tagText = (t) => {\n  if (typeof t === 'string') return t;\n  if (t && typeof t === 'object') return t.name || t.tag || t.label || '';\n  return '';\n};\n\nconst out = [];\nfor (const page of $input.all()) {\n  const body = page.json || {};\n  const items = body.items || body.data || [];\n  for (const it of items) {\n    if (!it || !it.id) continue;\n    const cp = it.correspondentProfile || {};\n    const rawTags = [].concat(cp.tags || [], cp.autoTags || []);\n    const tags = [...new Set(rawTags.map(tagText).map(s => (s || '').trim()).filter(Boolean))];\n    if (!tags.length) continue;            // skip untagged conversations\n\n    const fullName = [cp.firstName, cp.lastName].filter(Boolean).join(' ').trim();\n    const lead = {\n      id: cp.linkedin_id || null,\n      full_name: fullName || null,\n      first_name: cp.firstName || null,\n      last_name: cp.lastName || null,\n      company_name: cp.companyName || null,\n      position: cp.position || cp.headline || null,\n      email_address: cp.emailAddress || cp.enrichedEmailAddress || cp.customEmailAddress || null,\n      profile_url: cp.profileUrl || null,\n      tags: tags                            // normalized string array\n    };\n    out.push({ json: { p_conversation_id: String(it.id), p_lead: lead } });\n  }\n}\nreturn out;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [520, 0],
+      "id": "map-node",
+      "name": "Normalize + filter tagged"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://jezvwasrtgjrunagabpj.supabase.co/rest/v1/rpc/sync_lead_tags",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "PASTE_SUPABASE_SERVICE_ROLE_KEY_HERE" },
+            { "name": "Authorization", "value": "Bearer PASTE_SUPABASE_SERVICE_ROLE_KEY_HERE" },
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Accept", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_conversation_id: $json.p_conversation_id, p_lead: $json.p_lead }) }}",
+        "options": {
+          "timeout": 15000,
+          "response": { "response": { "responseFormat": "text", "neverError": true } },
+          "batching": { "batch": { "batchSize": 5, "batchInterval": 400 } }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [780, 0],
+      "id": "supabase-node",
+      "name": "Supabase sync_lead_tags"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Every 15 min": {
+      "main": [[{ "node": "HeyReach GetConversationsV2 (paged)", "type": "main", "index": 0 }]]
+    },
+    "HeyReach GetConversationsV2 (paged)": {
+      "main": [[{ "node": "Normalize + filter tagged", "type": "main", "index": 0 }]]
+    },
+    "Normalize + filter tagged": {
+      "main": [[{ "node": "Supabase sync_lead_tags", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "tags": []
+}

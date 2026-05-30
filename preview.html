@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Outreach Dashboard - Preview</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg: #f7f8fa;
+            --surface: #ffffff;
+            --border: #e6e8ec;
+            --border-hover: #cdd1d8;
+            --text: #0a0d14;
+            --text-muted: #5b6373;
+            --text-subtle: #8a93a3;
+            --accent: #0a0d14;
+            --accent-soft: #f1f2f5;
+            --emerald: #059669;
+            --emerald-soft: #ecfdf5;
+            --blue: #2563eb;
+            --blue-soft: #eff6ff;
+            --amber: #d97706;
+            --amber-soft: #fffbeb;
+            --orange: #ea580c;
+            --orange-soft: #fff7ed;
+            --red: #dc2626;
+            --red-soft: #fef2f2;
+            --gray: #6b7280;
+            --gray-soft: #f3f4f6;
+            --gradient-card: linear-gradient(145deg, #ffffff 0%, #fafbfc 100%);
+            --shadow-sm: 0 1px 2px rgba(10, 13, 20, 0.04), 0 0 0 1px rgba(10, 13, 20, 0.04);
+            --shadow-md: 0 4px 12px rgba(10, 13, 20, 0.06), 0 0 0 1px rgba(10, 13, 20, 0.04);
+            --shadow-lg: 0 10px 30px rgba(10, 13, 20, 0.08), 0 0 0 1px rgba(10, 13, 20, 0.04);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            font-size: 14px;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .num { font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; font-weight: 600; }
+
+        /* Header */
+        .header {
+            background: linear-gradient(180deg, #0a0d14 0%, #0f131c 100%);
+            color: #fff;
+            padding: 18px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .header-left { display: flex; align-items: center; gap: 14px; }
+        .logo-mark {
+            width: 32px; height: 32px;
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 800; font-size: 14px;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+        }
+        .header-title { font-size: 16px; font-weight: 600; letter-spacing: -0.01em; }
+        .header-tagline { font-size: 12px; color: rgba(255,255,255,0.5); margin-top: 1px; }
+
+        .preview-badge {
+            background: rgba(99, 102, 241, 0.15);
+            color: #a5b4fc;
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        .header-right { display: flex; align-items: center; gap: 12px; }
+        .user-chip {
+            display: flex; align-items: center; gap: 8px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 6px 10px 6px 6px;
+            border-radius: 999px;
+            font-size: 12px;
+        }
+        .avatar {
+            width: 24px; height: 24px;
+            background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 11px; font-weight: 700;
+        }
+
+        /* Main */
+        .main { max-width: 1320px; margin: 0 auto; padding: 24px 32px 64px; }
+
+        /* Controls */
+        .controls {
+            background: var(--gradient-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 24px;
+            box-shadow: var(--shadow-sm);
+            flex-wrap: wrap;
+        }
+        .controls-label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-subtle);
+            margin-right: 4px;
+        }
+        .ctrl {
+            display: flex; align-items: center; gap: 6px;
+            background: #fff;
+            border: 1px solid var(--border);
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-family: inherit;
+            color: var(--text);
+            cursor: pointer;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+        .ctrl:hover { border-color: var(--border-hover); }
+        .ctrl select { border: none; background: transparent; font-family: inherit; font-size: 13px; color: var(--text); cursor: pointer; outline: none; }
+        .date-pill { display: flex; gap: 1px; background: var(--accent-soft); border-radius: 8px; padding: 2px; }
+        .date-pill button {
+            background: transparent; border: none; padding: 6px 12px;
+            border-radius: 6px; font-size: 12px; font-weight: 500;
+            color: var(--text-muted); cursor: pointer;
+            font-family: inherit;
+            transition: all 0.15s;
+        }
+        .date-pill button.active { background: #fff; color: var(--text); box-shadow: var(--shadow-sm); font-weight: 600; }
+        .date-pill button:hover:not(.active) { color: var(--text); }
+
+        .ctrl-spacer { flex: 1; }
+
+        .load-btn {
+            background: var(--accent); color: #fff; border: none;
+            padding: 8px 18px; border-radius: 8px;
+            font-family: inherit; font-size: 13px; font-weight: 600;
+            cursor: pointer;
+            display: inline-flex; align-items: center; gap: 6px;
+            transition: transform 0.1s, background 0.15s;
+        }
+        .load-btn:hover { background: #1a1f2e; }
+        .load-btn:active { transform: scale(0.97); }
+
+        /* Insight cards */
+        .insights {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .insight-card {
+            background: var(--gradient-card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 20px;
+            box-shadow: var(--shadow-sm);
+            position: relative;
+            overflow: hidden;
+        }
+        .insight-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+        }
+        .insight-card.win::before { background: linear-gradient(90deg, var(--emerald) 0%, transparent 100%); }
+        .insight-card.alert::before { background: linear-gradient(90deg, var(--amber) 0%, transparent 100%); }
+
+        .insight-label {
+            font-size: 11px; font-weight: 600;
+            text-transform: uppercase; letter-spacing: 0.08em;
+            color: var(--text-subtle);
+            display: flex; align-items: center; gap: 6px;
+            margin-bottom: 12px;
+        }
+        .insight-label .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--emerald); }
+        .insight-label.alert .dot { background: var(--amber); }
+        .insight-title { font-size: 18px; font-weight: 700; margin-bottom: 4px; letter-spacing: -0.01em; }
+        .insight-body { font-size: 13px; color: var(--text-muted); }
+        .insight-body strong { color: var(--text); font-weight: 600; }
+
+        /* KPI grid */
+        .kpis {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        .kpi {
+            background: var(--gradient-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: var(--shadow-sm);
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+        .kpi:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
+        .kpi-label {
+            font-size: 11px; font-weight: 600;
+            color: var(--text-subtle);
+            text-transform: uppercase; letter-spacing: 0.06em;
+            margin-bottom: 8px;
+        }
+        .kpi-value { font-size: 24px; letter-spacing: -0.02em; line-height: 1.1; }
+        .kpi-delta {
+            font-size: 11px;
+            margin-top: 4px;
+            font-weight: 600;
+            display: inline-flex; align-items: center; gap: 3px;
+        }
+        .kpi-delta.up { color: var(--emerald); }
+        .kpi-delta.down { color: var(--red); }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 4px;
+            background: var(--accent-soft);
+            padding: 4px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            width: fit-content;
+        }
+        .tab {
+            padding: 8px 16px;
+            background: transparent;
+            border: none;
+            border-radius: 7px;
+            font-family: inherit;
+            font-size: 13px; font-weight: 500;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .tab:hover:not(.active) { color: var(--text); }
+        .tab.active {
+            background: #fff;
+            color: var(--text);
+            box-shadow: var(--shadow-sm);
+            font-weight: 600;
+        }
+        .tab-count {
+            background: var(--accent-soft);
+            color: var(--text-subtle);
+            padding: 1px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+            margin-left: 6px;
+            font-weight: 600;
+        }
+        .tab.active .tab-count { background: var(--accent-soft); color: var(--text-muted); }
+
+        .panel { display: none; }
+        .panel.active { display: block; }
+
+        /* Section card */
+        .section {
+            background: var(--gradient-card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 24px;
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 20px;
+        }
+
+        .section-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .section-title { font-size: 16px; font-weight: 600; letter-spacing: -0.01em; }
+        .section-subtitle { font-size: 12px; color: var(--text-subtle); margin-top: 2px; }
+        .section-actions { display: flex; gap: 8px; align-items: center; }
+
+        .csv-btn {
+            background: #fff; border: 1px solid var(--border);
+            padding: 6px 12px; border-radius: 7px;
+            font-family: inherit; font-size: 12px; font-weight: 500;
+            color: var(--text-muted); cursor: pointer;
+            display: inline-flex; align-items: center; gap: 5px;
+            transition: all 0.15s;
+        }
+        .csv-btn:hover { color: var(--text); border-color: var(--border-hover); }
+
+        /* LinkedIn table */
+        .data-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 13px;
+        }
+        .data-table th {
+            text-align: right;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-subtle);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border);
+            background: rgba(247, 248, 250, 0.5);
+        }
+        .data-table th:first-child { text-align: left; }
+        .data-table td {
+            padding: 12px;
+            text-align: right;
+            border-bottom: 1px solid var(--border);
+            color: var(--text);
+        }
+        .data-table td:first-child { text-align: left; color: var(--text-muted); font-size: 12px; }
+        .data-table tr:last-child td { border-bottom: none; }
+        .data-table tr.total td { background: rgba(247, 248, 250, 0.6); font-weight: 700; color: var(--text); }
+        .data-table tr.total td:first-child { color: var(--text); font-weight: 700; font-size: 13px; }
+        .data-table tr:hover td:not(.total td) { background: rgba(247, 248, 250, 0.4); }
+
+        .chart-wrap { height: 280px; margin-top: 16px; }
+
+        /* Campaign filters */
+        .filter-bar {
+            display: flex; align-items: center; gap: 12px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+        .chip-group { display: flex; gap: 4px; background: var(--accent-soft); border-radius: 8px; padding: 3px; }
+        .chip {
+            background: transparent; border: none;
+            padding: 6px 12px; border-radius: 6px;
+            font-family: inherit; font-size: 12px; font-weight: 500;
+            color: var(--text-muted); cursor: pointer;
+            transition: all 0.15s;
+        }
+        .chip:hover:not(.active) { color: var(--text); }
+        .chip.active { background: #fff; color: var(--text); box-shadow: var(--shadow-sm); font-weight: 600; }
+
+        /* Campaign cards */
+        .campaign-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+            gap: 14px;
+        }
+
+        .campaign-card {
+            background: var(--gradient-card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 18px;
+            box-shadow: var(--shadow-sm);
+            cursor: pointer;
+            transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+            position: relative;
+            overflow: hidden;
+        }
+        .campaign-card::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 0; bottom: 0;
+            width: 3px;
+            background: var(--gray);
+        }
+        .campaign-card.tier-s::before { background: linear-gradient(180deg, var(--emerald) 0%, #34d399 100%); }
+        .campaign-card.tier-1::before { background: linear-gradient(180deg, var(--blue) 0%, #60a5fa 100%); }
+        .campaign-card.tier-2::before { background: linear-gradient(180deg, var(--amber) 0%, #fbbf24 100%); }
+        .campaign-card.tier-3::before { background: linear-gradient(180deg, var(--orange) 0%, #fb923c 100%); }
+        .campaign-card.tier-4::before { background: linear-gradient(180deg, var(--gray) 0%, #9ca3af 100%); }
+
+        .campaign-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+            border-color: var(--border-hover);
+        }
+
+        .campaign-head {
+            display: flex; justify-content: space-between; align-items: flex-start;
+            margin-bottom: 14px;
+            gap: 12px;
+        }
+        .campaign-info { flex: 1; min-width: 0; }
+        .campaign-code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-subtle);
+            letter-spacing: 0.02em;
+            margin-bottom: 2px;
+        }
+        .campaign-name {
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: -0.01em;
+            line-height: 1.3;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .campaign-meta {
+            font-size: 11px;
+            color: var(--text-subtle);
+            display: flex; align-items: center; gap: 8px;
+        }
+        .campaign-meta-dot { width: 3px; height: 3px; border-radius: 50%; background: var(--text-subtle); }
+
+        .status {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+        .status::before { content: ''; width: 5px; height: 5px; border-radius: 50%; }
+        .status.active { background: var(--emerald-soft); color: var(--emerald); }
+        .status.active::before { background: var(--emerald); animation: pulse 2s infinite; }
+        .status.paused { background: var(--amber-soft); color: var(--amber); }
+        .status.paused::before { background: var(--amber); }
+        .status.completed { background: var(--gray-soft); color: var(--gray); }
+        .status.completed::before { background: var(--gray); }
+        .status.draft { background: var(--blue-soft); color: var(--blue); }
+        .status.draft::before { background: var(--blue); }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.3); }
+        }
+
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1px;
+            background: var(--border);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 14px;
+        }
+        .metric {
+            background: rgba(247, 248, 250, 0.5);
+            padding: 10px 12px;
+        }
+        .metric-label {
+            font-size: 10px;
+            color: var(--text-subtle);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        .metric-value { font-size: 18px; letter-spacing: -0.02em; }
+
+        .rate-row {
+            display: flex; flex-direction: column; gap: 8px;
+            margin-bottom: 12px;
+        }
+        .rate {
+            display: flex; align-items: center; gap: 10px;
+        }
+        .rate-label { font-size: 11px; color: var(--text-muted); width: 80px; flex-shrink: 0; font-weight: 500; }
+        .rate-bar-wrap {
+            flex: 1;
+            height: 6px;
+            background: var(--accent-soft);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .rate-bar {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .rate-bar.high { background: linear-gradient(90deg, var(--emerald) 0%, #34d399 100%); }
+        .rate-bar.med { background: linear-gradient(90deg, var(--amber) 0%, #fbbf24 100%); }
+        .rate-bar.low { background: linear-gradient(90deg, var(--red) 0%, #f87171 100%); }
+        .rate-value { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; width: 50px; text-align: right; }
+
+        .campaign-footer {
+            display: flex; align-items: center; justify-content: space-between;
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+            font-size: 11px;
+        }
+        .sender-chip {
+            display: inline-flex; align-items: center; gap: 6px;
+            color: var(--text-muted);
+        }
+        .sender-avatar {
+            width: 18px; height: 18px;
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            color: #fff; font-size: 9px; font-weight: 700;
+        }
+
+        .trend-mini {
+            display: flex; align-items: center; gap: 4px;
+            color: var(--text-subtle);
+            font-size: 11px;
+        }
+
+        /* Empty state */
+        .empty {
+            text-align: center;
+            padding: 64px 24px;
+            color: var(--text-muted);
+        }
+        .empty-icon {
+            width: 56px; height: 56px;
+            background: var(--accent-soft);
+            border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 16px;
+            color: var(--text-subtle);
+        }
+        .empty-title {
+            font-size: 16px; font-weight: 600; color: var(--text);
+            margin-bottom: 6px;
+        }
+        .empty-text {
+            font-size: 13px;
+            max-width: 360px;
+            margin: 0 auto;
+        }
+
+        /* Notice ribbon */
+        .notice {
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            color: #fff;
+            padding: 10px 32px;
+            font-size: 12px;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+            font-weight: 500;
+        }
+
+        @media (max-width: 1100px) {
+            .kpis { grid-template-columns: repeat(3, 1fr); }
+        }
+        @media (max-width: 768px) {
+            .insights { grid-template-columns: 1fr; }
+            .kpis { grid-template-columns: repeat(2, 1fr); }
+            .header, .main, .notice { padding-left: 16px; padding-right: 16px; }
+            .campaign-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="notice">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+        Preview mode — all numbers are mock data. Use this to approve the visual direction.
+    </div>
+
+    <header class="header">
+        <div class="header-left">
+            <div class="logo-mark">O</div>
+            <div>
+                <div class="header-title">Outreach Dashboard</div>
+                <div class="header-tagline">OSPRI · Performance Analytics</div>
+            </div>
+            <span class="preview-badge">Preview</span>
+        </div>
+        <div class="header-right">
+            <div class="user-chip">
+                <div class="avatar">E</div>
+                <span>ert@amplis.co</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="main">
+        <!-- Controls -->
+        <div class="controls">
+            <span class="controls-label">View</span>
+            <div class="ctrl">
+                <select>
+                    <option>All senders</option>
+                    <option>Dr. Alaina Vincent</option>
+                    <option>Steve Sorey</option>
+                    <option>Elena</option>
+                </select>
+            </div>
+            <span class="controls-label">Range</span>
+            <div class="date-pill">
+                <button>Today</button>
+                <button>7d</button>
+                <button class="active">28d</button>
+                <button>90d</button>
+                <button>Custom</button>
+            </div>
+            <div class="ctrl-spacer"></div>
+            <button class="load-btn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+                Refresh
+            </button>
+        </div>
+
+        <!-- Insights -->
+        <div class="insights">
+            <div class="insight-card win">
+                <div class="insight-label"><span class="dot"></span> Top Performer · Last 28d</div>
+                <div class="insight-title">OSPR012 — Diagnostics Q2</div>
+                <div class="insight-body">
+                    <strong>36.8% acceptance</strong> and <strong>27.6% reply rate</strong> on <strong>847 connections</strong> sent.
+                    Lab Directors / VP segment, run by Dr. Alaina Vincent. Beating account avg by <strong>+11.2pts</strong>.
+                </div>
+            </div>
+            <div class="insight-card alert">
+                <div class="insight-label alert"><span class="dot"></span> Needs Attention</div>
+                <div class="insight-title">OSPR007 — POL Outreach (Soft Open)</div>
+                <div class="insight-body">
+                    Reply rate dropped to <strong>4.2%</strong> over the last 14 days (was 11.8% prior). Sequence step 2 is the drop-off point.
+                    Consider pausing or rewriting the follow-up.
+                </div>
+            </div>
+        </div>
+
+        <!-- KPIs -->
+        <div class="kpis">
+            <div class="kpi">
+                <div class="kpi-label">Active Campaigns</div>
+                <div class="kpi-value num">14</div>
+                <div class="kpi-delta up">▲ 2 this week</div>
+            </div>
+            <div class="kpi">
+                <div class="kpi-label">Connections Sent</div>
+                <div class="kpi-value num">3,482</div>
+                <div class="kpi-delta up">▲ 12.4%</div>
+            </div>
+            <div class="kpi">
+                <div class="kpi-label">Acceptance Rate</div>
+                <div class="kpi-value num">28.6%</div>
+                <div class="kpi-delta up">▲ 1.8pts</div>
+            </div>
+            <div class="kpi">
+                <div class="kpi-label">Messages Sent</div>
+                <div class="kpi-value num">2,184</div>
+                <div class="kpi-delta up">▲ 8.1%</div>
+            </div>
+            <div class="kpi">
+                <div class="kpi-label">Replies</div>
+                <div class="kpi-value num">412</div>
+                <div class="kpi-delta down">▼ 3.2%</div>
+            </div>
+            <div class="kpi">
+                <div class="kpi-label">Reply Rate</div>
+                <div class="kpi-value num">18.9%</div>
+                <div class="kpi-delta down">▼ 2.1pts</div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab active" data-tab="linkedin">LinkedIn Outreach</button>
+            <button class="tab" data-tab="email">Email Outreach</button>
+            <button class="tab" data-tab="campaigns">Campaigns <span class="tab-count">14</span></button>
+        </div>
+
+        <!-- LinkedIn panel -->
+        <div class="panel active" id="panel-linkedin">
+            <div class="section">
+                <div class="section-header">
+                    <div>
+                        <div class="section-title">Weekly Performance</div>
+                        <div class="section-subtitle">Saturday → Friday rolling weeks · last 4 weeks shown</div>
+                    </div>
+                    <div class="section-actions">
+                        <button class="csv-btn">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+                            Export CSV
+                        </button>
+                    </div>
+                </div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Week</th>
+                            <th>Connections Sent</th>
+                            <th>Accepted</th>
+                            <th>Acceptance Rate</th>
+                            <th>Messages Sent</th>
+                            <th>Replies</th>
+                            <th>Reply Rate</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="total">
+                            <td>Total</td>
+                            <td class="num">3,482</td>
+                            <td class="num">996</td>
+                            <td class="num">28.6%</td>
+                            <td class="num">2,184</td>
+                            <td class="num">412</td>
+                            <td class="num">18.9%</td>
+                        </tr>
+                        <tr>
+                            <td>Apr 12 – Apr 18</td>
+                            <td class="num">912</td>
+                            <td class="num">281</td>
+                            <td class="num">30.8%</td>
+                            <td class="num">578</td>
+                            <td class="num">119</td>
+                            <td class="num">20.6%</td>
+                        </tr>
+                        <tr>
+                            <td>Apr 19 – Apr 25</td>
+                            <td class="num">876</td>
+                            <td class="num">248</td>
+                            <td class="num">28.3%</td>
+                            <td class="num">541</td>
+                            <td class="num">102</td>
+                            <td class="num">18.9%</td>
+                        </tr>
+                        <tr>
+                            <td>Apr 26 – May 02</td>
+                            <td class="num">854</td>
+                            <td class="num">236</td>
+                            <td class="num">27.6%</td>
+                            <td class="num">528</td>
+                            <td class="num">94</td>
+                            <td class="num">17.8%</td>
+                        </tr>
+                        <tr>
+                            <td>May 03 – May 09</td>
+                            <td class="num">840</td>
+                            <td class="num">231</td>
+                            <td class="num">27.5%</td>
+                            <td class="num">537</td>
+                            <td class="num">97</td>
+                            <td class="num">18.1%</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="chart-wrap"><canvas id="linkedinChart"></canvas></div>
+            </div>
+        </div>
+
+        <!-- Email panel -->
+        <div class="panel" id="panel-email">
+            <div class="section">
+                <div class="empty">
+                    <div class="empty-icon">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                    </div>
+                    <div class="empty-title">Email outreach not configured</div>
+                    <div class="empty-text">Set the <code style="font-family:'JetBrains Mono',monospace;background:var(--accent-soft);padding:1px 5px;border-radius:4px;font-size:12px;">INSTANTLY_API_KEY</code> environment variable on Render to enable email tracking. Same view as LinkedIn will appear here.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Campaigns panel -->
+        <div class="panel" id="panel-campaigns">
+            <div class="filter-bar">
+                <span class="controls-label">Status</span>
+                <div class="chip-group">
+                    <button class="chip active" data-filter="all">All <span style="opacity:0.5;font-weight:500;">14</span></button>
+                    <button class="chip" data-filter="active">Active <span style="opacity:0.5;font-weight:500;">9</span></button>
+                    <button class="chip" data-filter="paused">Paused <span style="opacity:0.5;font-weight:500;">3</span></button>
+                    <button class="chip" data-filter="completed">Completed <span style="opacity:0.5;font-weight:500;">2</span></button>
+                </div>
+                <span class="controls-label" style="margin-left:8px;">Sort</span>
+                <div class="ctrl">
+                    <select>
+                        <option>Acceptance Rate</option>
+                        <option>Reply Rate</option>
+                        <option>Connections Sent</option>
+                        <option>Campaign Name</option>
+                    </select>
+                </div>
+                <div class="ctrl-spacer"></div>
+                <button class="csv-btn">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+                    Export CSV
+                </button>
+            </div>
+
+            <div class="campaign-grid" id="campaignGrid"></div>
+        </div>
+    </main>
+
+    <script>
+        // --- Mock OSPRI campaigns ---
+        const campaigns = [
+            { code: "OSPR012", name: "Diagnostics Q2 — Lab Directors", segment: "Lab", sender: "Dr. Alaina Vincent", status: "active", sent: 847, accepted: 312, messages: 286, replies: 79, tier: "s" },
+            { code: "OSPR018", name: "OBGYN Practice Outreach", segment: "OBGYN", sender: "Steve Sorey", status: "active", sent: 612, accepted: 187, messages: 198, replies: 41, tier: "1" },
+            { code: "OSPR009", name: "Urgent Care — Director Push", segment: "Urgent Care", sender: "Elena", status: "active", sent: 524, accepted: 142, messages: 158, replies: 32, tier: "1" },
+            { code: "OSPR021", name: "POL Specialty Labs Q2", segment: "POL", sender: "Dr. Alaina Vincent", status: "active", sent: 481, accepted: 124, messages: 132, replies: 28, tier: "2" },
+            { code: "OSPR015", name: "Diagnostics — Mid-Market Push", segment: "Diagnostics", sender: "Steve Sorey", status: "active", sent: 392, accepted: 98, messages: 105, replies: 19, tier: "2" },
+            { code: "OSPR022", name: "Lab Network — VP Outreach", segment: "Lab", sender: "Elena", status: "active", sent: 318, accepted: 76, messages: 84, replies: 14, tier: "2" },
+            { code: "OSPR007", name: "POL Outreach — Soft Open", segment: "POL", sender: "Dr. Alaina Vincent", status: "active", sent: 287, accepted: 51, messages: 64, replies: 7, tier: "3" },
+            { code: "OSPR025", name: "OBGYN Group Practices", segment: "OBGYN", sender: "Steve Sorey", status: "active", sent: 198, accepted: 42, messages: 51, replies: 11, tier: "2" },
+            { code: "OSPR028", name: "Diagnostics — Enterprise Tier", segment: "Diagnostics", sender: "Dr. Alaina Vincent", status: "active", sent: 124, accepted: 38, messages: 42, replies: 11, tier: "s" },
+            { code: "OSPR014", name: "Urgent Care — Regional Chains", segment: "Urgent Care", sender: "Elena", status: "paused", sent: 412, accepted: 89, messages: 96, replies: 14, tier: "3" },
+            { code: "OSPR019", name: "Lab — Independent Operators", segment: "Lab", sender: "Steve Sorey", status: "paused", sent: 256, accepted: 51, messages: 58, replies: 6, tier: "3" },
+            { code: "OSPR011", name: "POL — Cold Test", segment: "POL", sender: "Dr. Alaina Vincent", status: "paused", sent: 89, accepted: 12, messages: 14, replies: 1, tier: "4" },
+            { code: "OSPR003", name: "Diagnostics Pilot — Q1 Wrap", segment: "Diagnostics", sender: "Steve Sorey", status: "completed", sent: 524, accepted: 168, messages: 184, replies: 47, tier: "1" },
+            { code: "OSPR005", name: "OBGYN Pilot — Q1", segment: "OBGYN", sender: "Elena", status: "completed", sent: 318, accepted: 94, messages: 102, replies: 22, tier: "2" },
+        ];
+
+        function rateClass(rate, type) {
+            if (type === 'accept') {
+                if (rate >= 30) return 'high';
+                if (rate >= 18) return 'med';
+                return 'low';
+            } else {
+                if (rate >= 20) return 'high';
+                if (rate >= 12) return 'med';
+                return 'low';
+            }
+        }
+
+        function senderInitials(name) {
+            return name.split(' ').filter(p => !p.endsWith('.')).map(p => p[0]).join('').slice(0, 2).toUpperCase();
+        }
+
+        function renderCampaigns(filter) {
+            const grid = document.getElementById('campaignGrid');
+            const filtered = filter === 'all' ? campaigns : campaigns.filter(c => c.status === filter);
+            const sorted = [...filtered].sort((a, b) => (b.accepted / b.sent) - (a.accepted / a.sent));
+
+            grid.innerHTML = sorted.map(c => {
+                const acceptRate = (c.accepted / c.sent * 100);
+                const replyRate = c.messages > 0 ? (c.replies / c.messages * 100) : 0;
+                return `
+                    <div class="campaign-card tier-${c.tier}">
+                        <div class="campaign-head">
+                            <div class="campaign-info">
+                                <div class="campaign-code">${c.code}</div>
+                                <div class="campaign-name">${c.name}</div>
+                                <div class="campaign-meta">
+                                    <span>${c.segment}</span>
+                                    <span class="campaign-meta-dot"></span>
+                                    <span>Tier ${c.tier === 's' ? 'S' : c.tier}</span>
+                                </div>
+                            </div>
+                            <span class="status ${c.status}">${c.status}</span>
+                        </div>
+                        <div class="metric-grid">
+                            <div class="metric">
+                                <div class="metric-label">Sent</div>
+                                <div class="metric-value num">${c.sent.toLocaleString()}</div>
+                            </div>
+                            <div class="metric">
+                                <div class="metric-label">Accepted</div>
+                                <div class="metric-value num">${c.accepted.toLocaleString()}</div>
+                            </div>
+                            <div class="metric">
+                                <div class="metric-label">Replies</div>
+                                <div class="metric-value num">${c.replies.toLocaleString()}</div>
+                            </div>
+                        </div>
+                        <div class="rate-row">
+                            <div class="rate">
+                                <div class="rate-label">Acceptance</div>
+                                <div class="rate-bar-wrap">
+                                    <div class="rate-bar ${rateClass(acceptRate, 'accept')}" style="width:${Math.min(acceptRate * 2, 100)}%"></div>
+                                </div>
+                                <div class="rate-value">${acceptRate.toFixed(1)}%</div>
+                            </div>
+                            <div class="rate">
+                                <div class="rate-label">Reply Rate</div>
+                                <div class="rate-bar-wrap">
+                                    <div class="rate-bar ${rateClass(replyRate, 'reply')}" style="width:${Math.min(replyRate * 3, 100)}%"></div>
+                                </div>
+                                <div class="rate-value">${replyRate.toFixed(1)}%</div>
+                            </div>
+                        </div>
+                        <div class="campaign-footer">
+                            <div class="sender-chip">
+                                <div class="sender-avatar">${senderInitials(c.sender)}</div>
+                                <span>${c.sender}</span>
+                            </div>
+                            <div class="trend-mini">
+                                ${c.status === 'active' ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg> trending up' : c.status === 'paused' ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> on hold' : '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg> wrapped'}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Tab switching
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById('panel-' + tab.dataset.tab).classList.add('active');
+            });
+        });
+
+        // Filter chips
+        document.querySelectorAll('.chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+                chip.classList.add('active');
+                renderCampaigns(chip.dataset.filter);
+            });
+        });
+
+        // Date pills
+        document.querySelectorAll('.date-pill button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.date-pill button').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            });
+        });
+
+        // LinkedIn chart
+        const ctx = document.getElementById('linkedinChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['Apr 12', 'Apr 19', 'Apr 26', 'May 03'],
+                datasets: [
+                    {
+                        label: 'Connections Accepted',
+                        data: [281, 248, 236, 231],
+                        borderColor: '#059669',
+                        backgroundColor: 'rgba(5, 150, 105, 0.1)',
+                        fill: true,
+                        tension: 0.35,
+                        borderWidth: 2.5,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#fff',
+                        pointBorderColor: '#059669',
+                        pointBorderWidth: 2,
+                    },
+                    {
+                        label: 'Replies',
+                        data: [119, 102, 94, 97],
+                        borderColor: '#2563eb',
+                        backgroundColor: 'rgba(37, 99, 235, 0.08)',
+                        fill: true,
+                        tension: 0.35,
+                        borderWidth: 2.5,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#fff',
+                        pointBorderColor: '#2563eb',
+                        pointBorderWidth: 2,
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        align: 'end',
+                        labels: { boxWidth: 8, boxHeight: 8, usePointStyle: true, pointStyle: 'circle', padding: 16, font: { size: 12, family: 'Inter' } }
+                    },
+                    tooltip: {
+                        backgroundColor: '#0a0d14',
+                        padding: 12,
+                        cornerRadius: 8,
+                        titleFont: { family: 'Inter', size: 12, weight: '600' },
+                        bodyFont: { family: 'JetBrains Mono', size: 12 },
+                        displayColors: true,
+                        boxPadding: 4,
+                    }
+                },
+                scales: {
+                    x: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 11 }, color: '#8a93a3' } },
+                    y: { beginAtZero: true, grid: { color: '#e6e8ec' }, ticks: { font: { family: 'JetBrains Mono', size: 11 }, color: '#8a93a3' } }
+                }
+            }
+        });
+
+        renderCampaigns('all');
+    </script>
+</body>
+</html>

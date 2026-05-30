@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Outreach Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <header class="header">
+        <div class="header-left">
+            <img src="{{ url_for('static', filename='images/ospri-logo.png') }}" alt="OSPRI" class="brand-logo">
+            <div class="header-divider"></div>
+            <div>
+                <div class="header-title">Outreach Analytics</div>
+                <div class="header-tagline">Performance Dashboard</div>
+            </div>
+        </div>
+        <div class="header-right">
+            <a href="/validate" class="logout-btn" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px;" title="System validation">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4 12 14.01l-3-3"/></svg>
+                Validate
+            </a>
+            <form method="POST" action="/logout" style="margin:0;">
+                <button type="submit" class="logout-btn">Sign Out</button>
+            </form>
+        </div>
+    </header>
+
+    <main class="main">
+        <!-- Tabs (channel selector) -->
+        <div class="tabs">
+            <button class="tab active" data-tab="leads">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right:6px;vertical-align:-2px;"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+                Overview
+            </button>
+            <button class="tab" data-tab="linkedin">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="margin-right:6px;vertical-align:-2px;"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+                LinkedIn Outreach
+            </button>
+            <button class="tab" data-tab="email">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right:6px;vertical-align:-2px;"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                Email Outreach
+            </button>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls">
+            <span class="controls-label">View</span>
+            <div class="ctrl">
+                <select id="senderSelect">
+                    <option value="all">All senders</option>
+                </select>
+            </div>
+            <span class="controls-label">Range</span>
+            <div class="date-pill" id="datePresets">
+                <button data-days="7">7d</button>
+                <button data-days="28" class="active">28d</button>
+                <button data-days="90">90d</button>
+                <button data-days="custom">Custom</button>
+            </div>
+            <div class="ctrl custom-dates" id="customDates" style="display:none;">
+                <input type="date" id="startDate" class="date-input">
+                <span style="color:var(--text-subtle);">to</span>
+                <input type="date" id="endDate" class="date-input">
+            </div>
+            <div class="ctrl-spacer"></div>
+            <button id="loadBtn" class="load-btn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12l5 5L20 7"/></svg>
+                Load Data
+            </button>
+        </div>
+
+        <!-- Initial empty state (shown until Load is clicked) -->
+        <div id="initialState" class="initial-state">
+            <div class="initial-icon">
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 3v18h18"/><path d="M7 16v4"/><path d="M12 12v8"/><path d="M17 8v12"/></svg>
+            </div>
+            <div class="initial-title">Ready to analyze your outreach</div>
+            <div class="initial-text">
+                Pick a <strong>sender</strong> and <strong>date range</strong> above, then click <strong>Load Data</strong>.<br>
+                You'll see top &amp; bottom campaigns, daily performance, campaign breakdown, and reply analysis.
+            </div>
+        </div>
+
+        <!-- LinkedIn panel -->
+        <div class="panel" id="panel-linkedin">
+            <!-- Scorecards -->
+            <div class="insights">
+                <div class="insight-card win">
+                    <div class="insight-label"><span class="dot"></span> Top Performer</div>
+                    <div class="insight-title" id="insightTopTitle">—</div>
+                    <div class="insight-body" id="insightTopBody"></div>
+                </div>
+                <div class="insight-card alert">
+                    <div class="insight-label alert"><span class="dot"></span> Needs Attention</div>
+                    <div class="insight-title" id="insightAlertTitle">—</div>
+                    <div class="insight-body" id="insightAlertBody"></div>
+                </div>
+            </div>
+
+            <!-- KPIs -->
+            <div class="kpis">
+                <div class="kpi"><div class="kpi-label">Active Campaigns</div><div class="kpi-value num" id="kpiCampaigns">—</div></div>
+                <div class="kpi"><div class="kpi-label">Connections Sent</div><div class="kpi-value num" id="kpiSent">—</div></div>
+                <div class="kpi"><div class="kpi-label">Acceptance Rate</div><div class="kpi-value num" id="kpiAcceptRate">—</div></div>
+                <div class="kpi"><div class="kpi-label">Messages Sent</div><div class="kpi-value num" id="kpiMessages">—</div></div>
+                <div class="kpi"><div class="kpi-label">Replies</div><div class="kpi-value num" id="kpiReplies">—</div></div>
+                <div class="kpi"><div class="kpi-label">Reply Rate</div><div class="kpi-value num" id="kpiReplyRate">—</div></div>
+            </div>
+
+            <!-- Daily Performance section -->
+            <div class="section">
+                <div class="section-header">
+                    <div>
+                        <div class="section-title">Daily Performance</div>
+                        <div class="section-subtitle">Day-by-day breakdown for the selected range</div>
+                    </div>
+                    <div class="section-actions">
+                        <button class="csv-btn" id="exportLinkedInCsv">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+                            Export CSV
+                        </button>
+                    </div>
+                </div>
+                <div id="linkedinLoading" class="loading" style="display:none;">Loading LinkedIn data…</div>
+                <div id="linkedinContent" style="display:none;">
+                    <div class="filter-bar" style="margin-bottom:12px;">
+                        <span class="controls-label">Sort</span>
+                        <div class="ctrl">
+                            <select id="dailySort">
+                                <option value="date_desc">Date (newest first)</option>
+                                <option value="date_asc">Date (oldest first)</option>
+                                <option value="sent_desc">Connections Sent</option>
+                                <option value="replies_desc">Replies</option>
+                                <option value="reply_rate_desc">Reply Rate</option>
+                            </select>
+                        </div>
+                        <div class="ctrl-spacer"></div>
+                        <span class="controls-label" id="dailyRowCount" style="font-weight:500;text-transform:none;letter-spacing:0;color:var(--text-subtle);"></span>
+                    </div>
+                    <div class="table-wrap">
+                        <table class="data-table" id="linkedinTable"></table>
+                    </div>
+                    <div id="dailyShowMore" class="show-more-wrap" style="display:none;">
+                        <button class="show-more-btn" id="dailyShowMoreBtn">
+                            <span id="dailyShowMoreLabel">Show more days</span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+                        </button>
+                    </div>
+                    <div class="chart-wrap"><canvas id="linkedinChart"></canvas></div>
+                </div>
+                <div id="linkedinEmpty" class="empty" style="display:none;">
+                    <div class="empty-title">No data</div>
+                    <div class="empty-text">No LinkedIn outreach activity in this date range.</div>
+                </div>
+            </div>
+
+            <!-- Campaign Performance Analysis -->
+            <div class="section">
+                <div class="section-header">
+                    <div>
+                        <div class="section-title">Campaign Performance <span class="tab-count" id="tabCountCampaigns">0</span></div>
+                        <div class="section-subtitle">Where outreach is winning — broken down by source, audience, and size from the campaign naming convention</div>
+                    </div>
+                    <div class="section-actions">
+                        <button class="csv-btn" id="exportCampaignsCsv">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+                            Export CSV
+                        </button>
+                    </div>
+                </div>
+
+                <div id="campaignsLoading" class="loading" style="display:none;">Loading campaigns…</div>
+
+                <div id="campaignsAnalysis" style="display:none;">
+                    <!-- Quick stats: best/worst copy, best/worst targeting -->
+                    <div class="quick-insights">
+                        <div class="quick-insight">
+                            <div class="quick-insight-label">Best Copy <span class="qi-tag">reply rate</span></div>
+                            <div class="quick-insight-value num" id="qiBestCopyValue">—</div>
+                            <div class="quick-insight-name" id="qiBestCopyName">—</div>
+                        </div>
+                        <div class="quick-insight">
+                            <div class="quick-insight-label">Best Targeting <span class="qi-tag">acceptance</span></div>
+                            <div class="quick-insight-value num" id="qiBestTargetValue">—</div>
+                            <div class="quick-insight-name" id="qiBestTargetName">—</div>
+                        </div>
+                        <div class="quick-insight alert">
+                            <div class="quick-insight-label">Worst Copy <span class="qi-tag">reply rate</span></div>
+                            <div class="quick-insight-value num" id="qiWorstCopyValue">—</div>
+                            <div class="quick-insight-name" id="qiWorstCopyName">—</div>
+                        </div>
+                        <div class="quick-insight alert">
+                            <div class="quick-insight-label">Worst Targeting <span class="qi-tag">acceptance</span></div>
+                            <div class="quick-insight-value num" id="qiWorstTargetValue">—</div>
+                            <div class="quick-insight-name" id="qiWorstTargetName">—</div>
+                        </div>
+                    </div>
+
+                    <!-- Three dimensional breakdowns -->
+                    <div class="dimension-grid">
+                        <div class="dimension-block">
+                            <div class="dimension-header">
+                                <div class="dimension-title">By Source</div>
+                                <div class="dimension-sub">Sourcing tool / list (Sales Nav, ScrapeLi, Apify, etc)</div>
+                            </div>
+                            <div id="dimSource" class="dimension-rows"></div>
+                        </div>
+                        <div class="dimension-block">
+                            <div class="dimension-header">
+                                <div class="dimension-title">By Audience / ICP</div>
+                                <div class="dimension-sub">Who the campaign is targeting</div>
+                            </div>
+                            <div id="dimAudience" class="dimension-rows"></div>
+                        </div>
+                        <div class="dimension-block">
+                            <div class="dimension-header">
+                                <div class="dimension-title">By Company Size</div>
+                                <div class="dimension-sub">Size band targeted (1-10, 11-50, etc)</div>
+                            </div>
+                            <div id="dimSize" class="dimension-rows"></div>
+                        </div>
+                    </div>
+
+                    <!-- Top Campaigns Leaderboard -->
+                    <div class="leaderboard-block">
+                        <div class="leaderboard-header">
+                            <div>
+                                <div class="leaderboard-title">Campaign Leaderboard</div>
+                                <div class="leaderboard-sub">Individual campaign performance, sortable</div>
+                            </div>
+                            <div class="filter-bar" style="margin:0;">
+                                <span class="controls-label">Sort</span>
+                                <div class="ctrl">
+                                    <select id="campaignSort">
+                                        <option value="reply">Reply Rate (high → low)</option>
+                                        <option value="reply_asc">Reply Rate (low → high)</option>
+                                        <option value="acceptance">Acceptance Rate (high → low)</option>
+                                        <option value="sent">Connections Sent</option>
+                                        <option value="recent">Most Recent</option>
+                                        <option value="name">Campaign Name (A-Z)</option>
+                                    </select>
+                                </div>
+                                <span class="controls-label" style="margin-left:8px;">Filter</span>
+                                <div class="ctrl">
+                                    <select id="campaignFilterSelect">
+                                        <option value="all">All with activity</option>
+                                        <option value="active">Active</option>
+                                        <option value="paused">Paused</option>
+                                        <option value="completed">Completed</option>
+                                        <option value="best">Best Performing</option>
+                                        <option value="underperforming">Underperforming</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="table-wrap">
+                            <table class="data-table" id="campaignsTable"></table>
+                        </div>
+                        <div id="campaignsShowMore" class="show-more-wrap" style="display:none;">
+                            <button class="show-more-btn" id="campaignsShowMoreBtn">
+                                <span id="campaignsShowMoreLabel">Show more</span>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="campaignsEmpty" class="empty" style="display:none;">
+                    <div class="empty-title">No campaign activity in this period</div>
+                    <div class="empty-text">Try widening your date range — there are campaigns in the workspace, but none had outreach activity in this window.</div>
+                </div>
+            </div>
+
+            <!-- Message Analysis section -->
+            <div class="section">
+                <div class="section-header">
+                    <div>
+                        <div class="section-title">Message Analysis</div>
+                        <div class="section-subtitle">Reply outcomes, sequence funnel, and top-replying campaigns</div>
+                    </div>
+                </div>
+
+                <div class="kpis kpis-4" style="margin-bottom:20px;">
+                    <div class="kpi accent-emerald">
+                        <div class="kpi-label">Moved To Email</div>
+                        <div class="kpi-value num" id="kpiBooked">—</div>
+                        <div class="kpi-hint" id="kpiBookedHint">Wires up when CRM/Supabase is connected</div>
+                    </div>
+                    <div class="kpi accent-gray pending">
+                        <div class="kpi-label">Positive Replies <span class="kpi-tag">v1.1</span></div>
+                        <div class="kpi-value num" id="kpiPositive">—</div>
+                        <div class="kpi-hint" id="kpiPositiveHint">Wires up with AI sentiment evaluation</div>
+                    </div>
+                    <div class="kpi accent-amber">
+                        <div class="kpi-label">Open Conversations</div>
+                        <div class="kpi-value num" id="kpiConvos">—</div>
+                        <div class="kpi-hint">Threads with at least one reply</div>
+                    </div>
+                    <div class="kpi accent-blue">
+                        <div class="kpi-label">Total Replies</div>
+                        <div class="kpi-value num" id="kpiTotalReplies">—</div>
+                        <div class="kpi-hint" id="kpiRepliesHint">All inbound responses</div>
+                    </div>
+                </div>
+
+                <div class="msg-grid">
+                    <div class="msg-block">
+                        <div class="msg-block-title">Reply Classification</div>
+                        <div class="msg-block-sub">Breakdown of inbound replies by sentiment</div>
+                        <div id="replyClassEmpty" class="reply-class-placeholder">
+                            Classification requires either a CRM connection or AI evaluation. Showing aggregate reply count from HeyReach.
+                        </div>
+                        <div class="chart-wrap" style="height:240px;"><canvas id="replyClassChart"></canvas></div>
+                    </div>
+
+                    <div class="msg-block">
+                        <div class="msg-block-title">Sequence Step Performance</div>
+                        <div class="msg-block-sub">Drop-off across each step in the outreach sequence</div>
+                        <div id="sequenceFunnel" class="funnel"></div>
+                    </div>
+                </div>
+
+                <div class="msg-block" style="margin-top:24px;">
+                    <div class="msg-block-title">Sender Breakdown</div>
+                    <div class="msg-block-sub">Per-sender reply performance for the selected period</div>
+                    <div id="senderBreakdown" class="sender-grid"></div>
+                </div>
+
+                <div class="msg-block" style="margin-top:24px;">
+                    <div class="filter-bar" style="margin-bottom:12px;">
+                        <div>
+                            <div class="msg-block-title">Campaign Leaderboard</div>
+                            <div class="msg-block-sub">Ranked by reply rate (campaigns with activity in this period)</div>
+                        </div>
+                        <div class="ctrl-spacer"></div>
+                        <span class="controls-label">Order</span>
+                        <div class="ctrl">
+                            <select id="leaderboardOrder">
+                                <option value="best">Best to Worst</option>
+                                <option value="worst">Worst to Best</option>
+                            </select>
+                        </div>
+                        <span class="controls-label">Show</span>
+                        <div class="ctrl">
+                            <select id="leaderboardLimit">
+                                <option value="5">Top 5</option>
+                                <option value="10">Top 10</option>
+                                <option value="all">All</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="topCampaignsList" class="top-list"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Email panel -->
+        <div class="panel" id="panel-email">
+            <!-- KPIs -->
+            <div class="kpis">
+                <div class="kpi"><div class="kpi-label">Email Accounts</div><div class="kpi-value num" id="emailKpiAccounts">—</div></div>
+                <div class="kpi"><div class="kpi-label">Emails Sent</div><div class="kpi-value num" id="emailKpiSent">—</div></div>
+                <div class="kpi"><div class="kpi-label">Open Rate</div><div class="kpi-value num" id="emailKpiOpenRate">—</div></div>
+                <div class="kpi"><div class="kpi-label">Replies</div><div class="kpi-value num" id="emailKpiReplies">—</div></div>
+                <div class="kpi"><div class="kpi-label">Reply Rate</div><div class="kpi-value num" id="emailKpiReplyRate">—</div></div>
+                <div class="kpi"><div class="kpi-label">Opportunities</div><div class="kpi-value num" id="emailKpiOpps">—</div></div>
+            </div>
+
+            <!-- Daily Performance section -->
+            <div class="section">
+                <div class="section-header">
+                    <div>
+                        <div class="section-title">Daily Performance</div>
+                        <div class="section-subtitle">Email sent / opened / replied per day</div>
+                    </div>
+                </div>
+                <div id="emailLoading" class="loading" style="display:none;">Loading email data…</div>
+                <div id="emailContent" style="display:none;">
+                    <div class="table-wrap">
+                        <table class="data-table" id="emailTable"></table>
+                    </div>
+                    <div class="chart-wrap"><canvas id="emailChart"></canvas></div>
+                </div>
+                <div id="emailEmpty" class="empty" style="display:none;">
+                    <div class="empty-title">No email activity in this range</div>
+                    <div class="empty-text">Either no campaigns are running, or no emails were sent in this window.</div>
+                </div>
+                <div id="emailNotConfigured" class="empty" style="display:none;">
+                    <div class="empty-icon">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                    </div>
+                    <div class="empty-title">Instantly not configured</div>
+                    <div class="empty-text">Set <code>INSTANTLY_API_KEY</code> in Render env to enable.</div>
+                </div>
+            </div>
+
+            <!-- Campaigns -->
+            <div class="section">
+                <div class="section-header">
+                    <div>
+                        <div class="section-title">Email Campaigns <span class="tab-count" id="emailTabCount">0</span></div>
+                        <div class="section-subtitle">Sequences ranked by reply rate</div>
+                    </div>
+                </div>
+                <div class="table-wrap">
+                    <table class="data-table" id="emailCampaignsTable"></table>
+                </div>
+                <div id="emailCampaignsEmpty" class="empty" style="display:none;">
+                    <div class="empty-title">No campaigns yet</div>
+                    <div class="empty-text">No campaigns with activity in this range.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Leads panel -->
+        <div class="panel" id="panel-leads">
+            <!-- Reporting strip -->
+            <div class="kpis" style="grid-template-columns: repeat(8, minmax(0,1fr));">
+                <div class="kpi"><div class="kpi-label">Connection Requests</div><div class="kpi-value num" id="leadKpiConn">—</div></div>
+                <div class="kpi"><div class="kpi-label">Accepted</div><div class="kpi-value num" id="leadKpiAccepted">—</div></div>
+                <div class="kpi"><div class="kpi-label">Acceptance Rate</div><div class="kpi-value num" id="leadKpiAccRate">—</div></div>
+                <div class="kpi"><div class="kpi-label">Replies</div><div class="kpi-value num" id="leadKpiReplies">—</div></div>
+                <div class="kpi"><div class="kpi-label">Reply Rate</div><div class="kpi-value num" id="leadKpiReplyRate">—</div></div>
+                <div class="kpi accent-blue"><div class="kpi-label">Open Conversations</div><div class="kpi-value num" id="leadKpiOpen">—</div></div>
+                <div class="kpi accent-amber"><div class="kpi-label">Interested</div><div class="kpi-value num" id="leadKpiInterested">—</div></div>
+                <div class="kpi accent-emerald"><div class="kpi-label">Moved To Email</div><div class="kpi-value num" id="leadKpiBooked">—</div></div>
+            </div>
+
+            <div id="leadsNotConfigured" class="empty" style="display:none;">
+                <div class="empty-icon">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+                </div>
+                <div class="empty-title">Lead data not configured</div>
+                <div class="empty-text">Set <code>SUPABASE_URL</code> + <code>SUPABASE_SERVICE_ROLE_KEY</code> in Render env and run the schema migration to enable the Leads board.</div>
+            </div>
+
+            <div id="leadsLoading" class="loading" style="display:none;">Loading leads…</div>
+
+            <div id="kanbanBoard" class="kanban" style="display:none;">
+                <div class="kanban-col" data-col="open">
+                    <div class="kanban-col-head">
+                        <span class="kanban-col-title"><span class="kanban-dot kdot-open"></span> Open</span>
+                        <span class="kanban-col-count" id="kanbanCountOpen">0</span>
+                    </div>
+                    <div class="kanban-col-body" id="kanbanOpen"></div>
+                </div>
+                <div class="kanban-col" data-col="interested">
+                    <div class="kanban-col-head">
+                        <span class="kanban-col-title"><span class="kanban-dot kdot-interested"></span> Interested</span>
+                        <span class="kanban-col-count" id="kanbanCountInterested">0</span>
+                    </div>
+                    <div class="kanban-col-body" id="kanbanInterested"></div>
+                </div>
+                <div class="kanban-col" data-col="meeting_booked">
+                    <div class="kanban-col-head">
+                        <span class="kanban-col-title"><span class="kanban-dot kdot-booked"></span> Moved To Email</span>
+                        <span class="kanban-col-count" id="kanbanCountBooked">0</span>
+                    </div>
+                    <div class="kanban-col-body" id="kanbanBooked"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Lead detail slide-over drawer -->
+    <div id="leadDrawerOverlay" class="drawer-overlay" style="display:none;"></div>
+    <aside id="leadDrawer" class="drawer" aria-hidden="true">
+        <div class="drawer-head">
+            <div>
+                <div class="drawer-name" id="drawerName">—</div>
+                <div class="drawer-sub" id="drawerSub"></div>
+            </div>
+            <button class="drawer-close" id="drawerClose" aria-label="Close">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <div class="drawer-body" id="drawerBody">
+            <div class="loading">Loading conversation…</div>
+        </div>
+    </aside>
+
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</body>
+</html>

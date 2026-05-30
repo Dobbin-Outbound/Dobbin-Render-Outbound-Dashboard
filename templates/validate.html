@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Validation — Outreach Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+    <style>
+        .validate-shell {
+            max-width: 880px;
+            margin: 0 auto;
+            padding: 32px 24px 64px;
+        }
+        .validate-hero {
+            background: linear-gradient(135deg, #0a0d14 0%, #1e1b4b 100%);
+            color: #fff;
+            border-radius: 16px;
+            padding: 28px;
+            margin-bottom: 24px;
+            position: relative;
+            overflow: hidden;
+        }
+        .validate-hero::before {
+            content: '';
+            position: absolute;
+            top: -50%; right: -10%;
+            width: 400px; height: 400px;
+            background: radial-gradient(circle, rgba(99,102,241,0.25) 0%, transparent 70%);
+        }
+        .validate-hero-label {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: rgba(165, 180, 252, 0.9);
+            margin-bottom: 6px;
+            position: relative;
+        }
+        .validate-hero-title {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            margin-bottom: 8px;
+            position: relative;
+        }
+        .validate-hero-sub {
+            font-size: 14px;
+            color: rgba(255,255,255,0.6);
+            position: relative;
+        }
+        .validate-overall {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 16px;
+            padding: 8px 14px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: 600;
+            position: relative;
+        }
+        .validate-overall .v-dot { width: 8px; height: 8px; border-radius: 50%; }
+        .validate-overall.pass { color: #6ee7b7; }
+        .validate-overall.pass .v-dot { background: #34d399; box-shadow: 0 0 12px rgba(52, 211, 153, 0.6); animation: vpulse 2s infinite; }
+        .validate-overall.warn { color: #fcd34d; }
+        .validate-overall.warn .v-dot { background: #fbbf24; box-shadow: 0 0 12px rgba(251, 191, 36, 0.6); }
+        .validate-overall.fail { color: #fca5a5; }
+        .validate-overall.fail .v-dot { background: #f87171; box-shadow: 0 0 12px rgba(248, 113, 113, 0.6); }
+        @keyframes vpulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(1.4); }
+        }
+
+        .validate-actions {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .v-grid { display: flex; flex-direction: column; gap: 10px; }
+        .v-step {
+            display: flex; align-items: flex-start; gap: 14px;
+            padding: 16px;
+            background: var(--gradient-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            box-shadow: var(--shadow-sm);
+            transition: border-color 0.15s;
+        }
+        .v-step:hover { border-color: var(--border-hover); }
+
+        .v-icon {
+            width: 36px; height: 36px;
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            font-weight: 700;
+        }
+        .v-step.pass .v-icon { background: var(--emerald-soft); color: var(--emerald); }
+        .v-step.warn .v-icon { background: var(--amber-soft); color: var(--amber); }
+        .v-step.fail .v-icon { background: var(--red-soft); color: var(--red); }
+        .v-step.pending .v-icon { background: var(--accent-soft); color: var(--text-subtle); }
+
+        .v-body { flex: 1; min-width: 0; }
+        .v-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 4px; }
+        .v-label { font-size: 14px; font-weight: 600; }
+        .v-status {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            padding: 2px 8px;
+            border-radius: 5px;
+        }
+        .v-status.pass { background: var(--emerald-soft); color: var(--emerald); }
+        .v-status.warn { background: var(--amber-soft); color: var(--amber); }
+        .v-status.fail { background: var(--red-soft); color: var(--red); }
+        .v-status.pending { background: var(--accent-soft); color: var(--text-subtle); }
+
+        .v-detail { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+        .v-metric {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-subtle);
+            background: var(--accent-soft);
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: 6px;
+        }
+
+        .v-loading {
+            display: flex; align-items: center; justify-content: center;
+            gap: 10px;
+            padding: 40px;
+            color: var(--text-subtle);
+            font-size: 13px;
+        }
+        .v-spinner {
+            width: 16px; height: 16px;
+            border: 2px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: vspin 0.8s linear infinite;
+        }
+        @keyframes vspin { to { transform: rotate(360deg); } }
+
+        .v-back {
+            display: inline-flex; align-items: center; gap: 6px;
+            color: var(--text-muted); text-decoration: none;
+            font-size: 13px;
+            margin-bottom: 16px;
+        }
+        .v-back:hover { color: var(--text); }
+
+        .v-timestamp {
+            text-align: right;
+            font-size: 11px;
+            color: var(--text-subtle);
+            font-family: 'JetBrains Mono', monospace;
+            margin-top: 16px;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-left">
+            <div class="logo-mark">O</div>
+            <div>
+                <div class="header-title">Outreach Dashboard</div>
+                <div class="header-tagline">System Validation</div>
+            </div>
+        </div>
+        <div class="header-right">
+            <a href="/" class="logout-btn" style="text-decoration:none;">← Dashboard</a>
+        </div>
+    </header>
+
+    <div class="validate-shell">
+        <div class="validate-hero">
+            <div class="validate-hero-label">System Status</div>
+            <div class="validate-hero-title">Integration & Health Check</div>
+            <div class="validate-hero-sub">Validates every component end to end. Run this after a deploy or whenever something looks off.</div>
+            <div class="validate-overall pending" id="overallBadge">
+                <span class="v-dot"></span>
+                <span id="overallText">Running checks…</span>
+            </div>
+        </div>
+
+        <div class="validate-actions">
+            <button id="rerunBtn" class="load-btn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>
+                Re-run all checks
+            </button>
+        </div>
+
+        <div id="vList">
+            <div class="v-loading">
+                <div class="v-spinner"></div>
+                Running validation…
+            </div>
+        </div>
+
+        <div class="v-timestamp" id="vTimestamp"></div>
+    </div>
+
+    <script>
+        const list = document.getElementById('vList');
+        const overallBadge = document.getElementById('overallBadge');
+        const overallText = document.getElementById('overallText');
+        const rerunBtn = document.getElementById('rerunBtn');
+        const tsEl = document.getElementById('vTimestamp');
+
+        function statusIcon(status, idx) {
+            if (status === 'pass') return '✓';
+            if (status === 'warn') return '!';
+            if (status === 'fail') return '✕';
+            return idx + 1;
+        }
+
+        function escape(s) {
+            return String(s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+        }
+
+        function render(data) {
+            const checks = data.checks || [];
+            list.innerHTML = checks.map((c, i) => `
+                <div class="v-step ${c.status}">
+                    <div class="v-icon">${statusIcon(c.status, i)}</div>
+                    <div class="v-body">
+                        <div class="v-row">
+                            <div class="v-label">${escape(c.label)}${c.metric ? `<span class="v-metric">${escape(c.metric)}</span>` : ''}</div>
+                            <span class="v-status ${c.status}">${c.status}</span>
+                        </div>
+                        <div class="v-detail">${escape(c.detail)}</div>
+                    </div>
+                </div>
+            `).join('');
+
+            const overall = data.overall || 'pending';
+            overallBadge.className = 'validate-overall ' + overall;
+            overallText.textContent = overall === 'pass' ? 'All systems operational'
+                : overall === 'warn' ? 'Operational with warnings'
+                : 'One or more checks failed';
+
+            if (data.timestamp) {
+                const d = new Date(data.timestamp);
+                tsEl.textContent = 'Last run: ' + d.toLocaleString();
+            }
+        }
+
+        async function runChecks() {
+            list.innerHTML = '<div class="v-loading"><div class="v-spinner"></div> Running validation…</div>';
+            overallBadge.className = 'validate-overall pending';
+            overallText.textContent = 'Running checks…';
+            rerunBtn.disabled = true;
+            try {
+                const resp = await fetch('/api/validate');
+                const data = await resp.json();
+                render(data);
+            } catch (e) {
+                list.innerHTML = '<div class="v-loading" style="color:var(--red);">Validation request failed: ' + e.message + '</div>';
+                overallBadge.className = 'validate-overall fail';
+                overallText.textContent = 'Validation request failed';
+            }
+            rerunBtn.disabled = false;
+        }
+
+        rerunBtn.addEventListener('click', runChecks);
+        runChecks();
+    </script>
+</body>
+</html>
