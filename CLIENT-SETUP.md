@@ -51,6 +51,27 @@ Render (per `Procfile` / `render.yaml` / `gunicorn.conf.py`): `gunicorn app:app 
 
 ---
 
+## Troubleshooting (confirmed fixes)
+
+### A. Supabase functions — use the SQL Editor, NOT the GUI form
+Deploy the whole schema by pasting **`supabase_schema.sql`** into Supabase → **SQL Editor → New query → Run**. That ONE file creates the `heyreach_messages` table AND both functions (`upsert_heyreach_conversation`, `sync_lead_tags`). Expect "Success. No rows returned." Safe to re-run (`CREATE OR REPLACE`).
+- Do **not** use the "Add a new function" GUI dialog — its separate Name / Return type / body fields easily get out of sync (e.g. Return type `void` while the body does `RETURN v_count` → error; or a name typo like `sync_leads_tag` vs the required `sync_lead_tags`).
+- The `RUN_THIS_IN_SUPABASE*.sql` files are just isolated single-function extracts for re-running one function later — not needed if you ran the full schema.
+- Order only matters if you run them piecemeal: table (schema) must exist before the functions, since they `UPDATE heyreach_messages`.
+
+### B. n8n → Supabase `42501 permission denied` — use the service_role key
+The n8n HTTP nodes that call Supabase RPCs must send the **service_role (secret) key** in BOTH headers:
+```
+apikey:        <SERVICE_ROLE_KEY>
+Authorization: Bearer <SERVICE_ROLE_KEY>
+```
+- Symptom: `{"code":"42501","message":"permission denied for table heyreach_messages"}`.
+- Cause: a **publishable / anon key** (`sb_publishable_...`) was used. anon has no table privileges, and the RPC runs as the calling role.
+- Fix: same key as Render's `SUPABASE_SERVICE_ROLE_KEY` (Supabase → Settings → API Keys → `service_role`; legacy `eyJ...` or new `sb_secret_...`).
+- Do **NOT** follow the error's `GRANT ... TO anon` hint — that exposes the table to the public anon key (security hole). service_role (server-side only: n8n, Render) is the correct answer.
+
+---
+
 ## INCOMPLETE - missing from this template
 These were NOT in the manual download and must be sourced from the real repo
 (`Dobbin-Outbound/Render-Outbound-Dashboard`, fork of `neo-vibe/Render-Outbound-Dashboard`)
