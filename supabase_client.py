@@ -219,12 +219,12 @@ class SupabaseMessageStore:
         return ''
 
     @classmethod
-    def _has_moved_to_email_tag(cls, row: dict) -> bool:
-        """True if the lead carries the HeyReach 'Emailed ✅' tag (client's
-        source of truth for the Moved-To-Email stage). Emoji/case tolerant.
+    def _has_booked_call_tag(cls, row: dict) -> bool:
+        """True if the lead carries the HeyReach 'Booked ✅' tag (client's
+        source of truth for the Booked Calls stage). Emoji/case tolerant.
 
         Handles BOTH tag shapes HeyReach returns: plain strings
-        ("Emailed ✅") and objects ({"name": "Emailed ✅", "campaignId": ...}).
+        ("Booked ✅") and objects ({"name": "Booked ✅", "campaignId": ...}).
         Takes precedence over the AI classification.
         """
         lead = row.get('lead') or {}
@@ -240,8 +240,8 @@ class SupabaseMessageStore:
 
     @classmethod
     def _is_moved_to_email(cls, row: dict) -> bool:
-        """Moved-To-Email = HeyReach 'Emailed ✅' tag OR AI is_meeting_booked."""
-        return cls._has_moved_to_email_tag(row) or (row.get('is_meeting_booked') is True)
+        """Booked Calls = HeyReach 'Booked ✅' tag OR AI is_meeting_booked."""
+        return cls._has_booked_call_tag(row) or (row.get('is_meeting_booked') is True)
 
     @classmethod
     def _bucket(cls, row: dict):
@@ -251,8 +251,8 @@ class SupabaseMessageStore:
         (not engaged / brush-off / OOO / not yet AI-evaluated) — these are
         excluded from the board entirely.
         """
-        if cls._is_moved_to_email(row):
-            return 'meeting_booked'  # column key stays; UI label is "Moved To Email"
+        if cls._is_booked_call(row):
+            return 'booked_call'  # column key stays; UI label is "Booked Calls"
         if row.get('is_interested') is True:
             return 'interested'
         if row.get('is_open_conversation') is True:
@@ -271,11 +271,11 @@ class SupabaseMessageStore:
                                  end_date=end_date, limit=5000)
         columns = {'open': [], 'interested': [], 'meeting_booked': []}
         excluded = 0
-        camp_moved = {}  # campaign_name -> count of moved-to-email
+        camp_booked = {}  # campaign_name -> count of booked_call
         for r in rows:
-            if self._is_moved_to_email(r):
+            if self._is_booked_call(r):
                 cname = r.get('campaign_name') or 'Unknown campaign'
-                camp_moved[cname] = camp_moved.get(cname, 0) + 1
+                camp_booked[cname] = camp_booked.get(cname, 0) + 1
             bucket = self._bucket(r)
             if bucket is None:
                 excluded += 1
@@ -297,8 +297,8 @@ class SupabaseMessageStore:
             c.sort(key=lambda x: x.get('last_activity') or '', reverse=True)
 
         top_campaigns = sorted(
-            ({'campaign': k, 'moved_to_email': v} for k, v in camp_moved.items()),
-            key=lambda x: x['moved_to_email'], reverse=True,
+            ({'campaign': k, 'booked_call': v} for k, v in camp_booked.items()),
+            key=lambda x: x['booked_call'], reverse=True,
         )
 
         return {
@@ -306,7 +306,7 @@ class SupabaseMessageStore:
             'counts': {k: len(v) for k, v in columns.items()},
             'total': sum(len(v) for v in columns.values()),
             'excluded': excluded,  # not-engaged convos hidden from the board
-            'top_campaigns': top_campaigns,  # ranked by Moved-To-Email for Top Performer
+            'top_campaigns': top_campaigns,  # ranked by Booked-Calls for Top Performer
         }
 
     def get_conversation(self, conversation_id: str) -> Optional[Dict]:
